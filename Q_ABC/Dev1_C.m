@@ -13,17 +13,15 @@ for n = nvec;
         Y = 0;
         Z = 0;
         for j = 1:n
-            Saut = 2*rand(1)-1;
-            X = X+Saut;
+            SautX = 2*rand(1)-1;
+            SautY = 2*rand(1)-1;
+            SautZ = 2*rand(1)-1;
+            
+            X = X+SautX;
+            Y = Y+SautY;
+            Z = Z+SautZ;
         end
-        for j = 1:n
-            Saut = 2*rand(1)-1;
-            Y = Y+Saut;
-        end
-        for j = 1:n
-            Saut = 2*rand(1)-1;
-            Z = Z+Saut;
-        end
+        
         Rvec = [Rvec,sqrt(X^2+Y^2+Z^2)];
     end
     
