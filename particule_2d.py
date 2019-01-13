@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import matplotlib.animation as animation
-from matplotlib.patches import Rectangle
+
 
 class particule:
     def __init__(self,x,y,vx,vy):
@@ -16,8 +18,8 @@ class particule:
         return np.linalg.norm(self.r-part2.r)
 
     def actualiser(self,dt):
-        self.x = self.x + self.vx*dt
-        self.y = self.y + self.vy*dt
+        self.r[0] = self.r[0] + self.v[0]*dt
+        self.r[1] = self.r[1] + self.v[1]*dt
 
 
 class Box:
@@ -32,8 +34,8 @@ class Box:
 
         self.liste_particule= []
         liste_particule = np.random.random((N,6))
-        liste_particule[:,0] *= x_lim
-        liste_particule[:,1] *= y_lim
+        liste_particule[:,0] = (liste_particule[:,0]*(x_lim-2*self.rayon)) + self.rayon
+        liste_particule[:,1] = (liste_particule[:,1]*(y_lim-2*self.rayon)) + self.rayon
         liste_particule[:,2] *= 2*np.pi
         a = np.sqrt((1.38*10**-23)*T/masse)
         liste_particule[:,3] = stats.maxwell.rvs(loc=0, scale=a, size=N)
@@ -45,10 +47,15 @@ class Box:
     def step(self):
         #Vérifier pour collision avec le mur
         for part in self.liste_particule:
-            if (part.r[0] + self.rayon) > self.x_lim or (part.r[0] - self.rayon) < 0:
-                part.v[0] *= -1
-            if (part.r[1] + self.rayon) > self.y_lim or (part.r[1] - self.rayon) < 0:
-                part.v[1] *= -1
+            if (part.r[0] + self.rayon) > self.x_lim :
+                part.v[0] = -abs(part.v[0])
+            elif (part.r[0] - self.rayon) < 0:
+                part.v[0] = abs(part.v[0])
+
+            if (part.r[1] + self.rayon) > self.y_lim:
+                part.v[1] = -abs(part.v[1])
+            elif (part.r[1] - self.rayon) < 0:
+                part.v[1] = abs(part.v[1])
 
         #Vérifier pour collision entre les particules
         for i,part1 in enumerate(self.liste_particule):
@@ -61,37 +68,85 @@ class Box:
                                        part2.v - np.dot(part2.v-part1.v, part2.r-part1.r)/(np.linalg.norm(part1.r-part2.r)**2)*(part2.r-part1.r))
 
         #Actualiser le système
-        for part in self.liste_particule:
+        for i,part in enumerate(self.liste_particule):
+            #print('position avant: {} '.format(self.liste_particule[i].r))
             part.actualiser(self.dt)
+            #print('Position particule après: {}'.format(part.r))
+            #print('Position part-sys après: {}'.format(self.liste_particule[i].r))
 
 
 #Création du système
-dt = 0.0001
-sys = Box(10,10,1,0.1,300,10,dt)
-
-#------------------------------------------------------------
-# set up figure and animation
-fig = plt.figure()
-fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-ax = fig.add_subplot(111, aspect='equal', autoscale_on=False,
-                xlim=(-3.2, 3.2), ylim=(-2.4, 2.4))
-
-# particles holds the locations of the particles
-particles, = ax.plot([], [], 'ro', ms=6)
-
-# rect is the box edge
-ax.add_patch(Rectangle((10 - 0.1, 10 - 0.1), 0.2, 0.2, alpha=1, facecolor='none'))
+dt = 1
+sys = Box(10,10,10**-15,0.1,300,10,dt)
 
 
-planetes_espace = [ plt.plot(part.r[0], part.r[1], 'o', color='r', markersize=2) for part in sys.liste_particule ]
+#Définition d'une fonction pour pour actualiser la position de plusieurs planètes à la fois
+def actualiser_systeme(systeme):
+    while True:
+        systeme.step()
+        yield systeme
 
-def animate():
-    # update pieces of the animation
-    sys.step()
-    for part,plot_part in zip(sys.liste_particule,planetes_espace):
-        plot_part[0].set_data(part.r[0], part.r[1])
-    return plot_part
+t = 0
+#Programme principal
+def main():
+    x_lim = 2
+    y_lim = 2
+    masse = 10**-20
+    rayon = 0.01
+    dt = 0.005
+    N = 200
+    T = 6000
 
-anim = animation.FuncAnimation(fig, animate, interval=5, blit=False, repeat=False, save_count=300,)
+    sys = Box(x_lim,y_lim,masse,rayon,T,N,dt)
 
-plt.show()
+    #Initialisation de la figure
+    #fig, (ax1,ax2) = plt.subplots(1,2, gridspec_kw = {'width_ratios':[3, 1]})
+    fig = plt.figure(figsize=(10,5))
+    ax1 = plt.subplot2grid((2, 3), (0, 0), colspan=2, rowspan=2)
+    ax2 = plt.subplot2grid((2, 3), (0, 2))
+    ax3 = plt.subplot2grid((2, 3), (1, 2))
+
+    #Paramètres esthétiques
+    ax1.set_xlim([0,x_lim])
+    ax1.set_ylim([0,y_lim])
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.set_aspect(1)
+    plt.axis('equal')
+
+    points_espace = [ax1.plot([], [], 'ro',  markersize=(rayon*450/x_lim)) for i in sys.liste_particule]
+
+    T_texte = ax1.text(0.02, 0.95, '0:.2f'.format(''), color='k', transform=ax1.transAxes)
+
+    #ax2.set_xlabel('Vitesse (m/s)')
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('Nombre de particules')
+    ax2.hist([], bins=round(N/10), facecolor='blue', alpha=0.75)
+
+    #Définition de la fonction d'animation du système
+    def run(data):
+
+        #actualisation du graphique
+        for i,points in enumerate(points_espace):
+            points[0].set_data(data.liste_particule[i].r[0], data.liste_particule[i].r[1])
+
+        global t
+        t += dt
+        T_texte.set_text('t = {0:.2f} s'.format(t))
+
+        ax2.cla()
+        ax2.hist([np.linalg.norm(i.v) for i in data.liste_particule], bins=round(N/10), facecolor='blue', alpha=0.75)
+
+        return points
+
+    #Animation
+    anim = animation.FuncAnimation(fig, run, actualiser_systeme(sys), interval=10, blit=False, repeat=True)
+
+    #Traçage de l'animation
+    #plt.figure(figsize=(10,10))
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
