@@ -23,7 +23,7 @@ class particule:
 
 
 class Box:
-    def __init__(self,x_lim,y_lim,masse,rayon,T,N,dt):
+    def __init__(self,x_lim,y_lim,masse,rayon,T,N,dt,pression=0):
         self.x_lim = x_lim
         self.y_lim = y_lim
         self.N = N
@@ -31,6 +31,7 @@ class Box:
         self.masse = masse
         self.rayon = rayon
         self.T = T
+        self.pression = pression
 
         self.liste_particule= []
         liste_particule = np.random.random((N,6))
@@ -45,34 +46,40 @@ class Box:
 
 
     def step(self):
+
+        #self.pression = 0
+
         #Vérifier pour collision avec le mur
         for part in self.liste_particule:
             if (part.r[0] + self.rayon) > self.x_lim :
                 part.v[0] = -abs(part.v[0])
+                #self.pression += 2*self.masse*abs(part.v[0])/(self.dt*self.y_lim*1)
             elif (part.r[0] - self.rayon) < 0:
                 part.v[0] = abs(part.v[0])
+                #self.pression += 2*self.masse*abs(part.v[0])/(self.dt*self.y_lim*1)
 
             if (part.r[1] + self.rayon) > self.y_lim:
                 part.v[1] = -abs(part.v[1])
+                #self.pression += 2*self.masse*abs(part.v[1])/(self.dt*self.x_lim*1)
             elif (part.r[1] - self.rayon) < 0:
                 part.v[1] = abs(part.v[1])
+                #self.pression += 2*self.masse*abs(part.v[1])/(self.dt*self.x_lim*1)
 
         #Vérifier pour collision entre les particules
         for i,part1 in enumerate(self.liste_particule):
             for j,part2 in enumerate(self.liste_particule):
                 if i >= j:
                     pass
-
                 elif part1.dist(part2) < 2*self.rayon:
                     part1.v,part2.v = (part1.v - np.dot(part1.v-part2.v, part1.r-part2.r)/(np.linalg.norm(part1.r-part2.r)**2)*(part1.r-part2.r),
                                        part2.v - np.dot(part2.v-part1.v, part2.r-part1.r)/(np.linalg.norm(part1.r-part2.r)**2)*(part2.r-part1.r))
 
         #Actualiser le système
         for i,part in enumerate(self.liste_particule):
-            #print('position avant: {} '.format(self.liste_particule[i].r))
             part.actualiser(self.dt)
-            #print('Position particule après: {}'.format(part.r))
-            #print('Position part-sys après: {}'.format(self.liste_particule[i].r))
+
+        v2_average = np.array([np.linalg.norm(i.v)**2 for i in self.liste_particule]).mean()
+        self.pression = self.N * self.masse * v2_average / (self.x_lim * self.y_lim)
 
 
 #Création du système
@@ -89,13 +96,13 @@ def actualiser_systeme(systeme):
 t = 0
 #Programme principal
 def main():
-    x_lim = 2
-    y_lim = 2
-    masse = 10**-20
-    rayon = 0.01
+    x_lim = 15
+    y_lim = 15
+    masse = 2*1.008/(6.022*10**23)
+    rayon = 0.12
     dt = 0.005
-    N = 200
-    T = 6000
+    N = 50
+    T = 300
 
     sys = Box(x_lim,y_lim,masse,rayon,T,N,dt)
 
@@ -109,33 +116,52 @@ def main():
     #Paramètres esthétiques
     ax1.set_xlim([0,x_lim])
     ax1.set_ylim([0,y_lim])
-    ax1.set_xlabel('x')
-    ax1.set_ylabel('y')
+    ax1.set_xlabel('x (m)', fontsize = 16)
+    ax1.set_ylabel('y (m)', fontsize = 16)
     ax1.set_aspect(1)
     plt.axis('equal')
-
     points_espace = [ax1.plot([], [], 'ro',  markersize=(rayon*450/x_lim)) for i in sys.liste_particule]
-
     T_texte = ax1.text(0.02, 0.95, '0:.2f'.format(''), color='k', transform=ax1.transAxes)
 
-    #ax2.set_xlabel('Vitesse (m/s)')
-    ax2.set_xlabel('x')
-    ax2.set_ylabel('Nombre de particules')
-    ax2.hist([], bins=round(N/10), facecolor='blue', alpha=0.75)
+    ax2.set_xlabel('Vitesse (m/s)',fontsize = 14)
+    ax2.set_ylabel('Nombre de particules', fontsize = 12)
+    ax2.hist([], bins=round(N/10), facecolor='blue', alpha=1, edgecolor='black', linewidth=1.2)
+
+    ax3.set_xlabel('Temps (s)', fontsize = 14)
+    ax3.set_ylabel('Pression (Pa)', fontsize = 14)
+    p_line = ax3.plot([], [])
+    #ax3.plot([], [])
 
     #Définition de la fonction d'animation du système
+    p = []
+    time = []
     def run(data):
-
         #actualisation du graphique
         for i,points in enumerate(points_espace):
             points[0].set_data(data.liste_particule[i].r[0], data.liste_particule[i].r[1])
 
+        #print([i.v[0] for i in data.liste_particule])
+        #print([i.v[1] for i in data.liste_particule])
+        #print([i.r[0] for i in data.liste_particule])
+        #print([i.r[1] for i in data.liste_particule])
+
         global t
         t += dt
+        time.append(t)
         T_texte.set_text('t = {0:.2f} s'.format(t))
 
         ax2.cla()
-        ax2.hist([np.linalg.norm(i.v) for i in data.liste_particule], bins=round(N/10), facecolor='blue', alpha=0.75)
+        ax2.hist([np.linalg.norm(i.v) for i in data.liste_particule], bins=round(N/10), facecolor='blue', alpha=1, edgecolor='black', linewidth=1.2)
+        ax2.set_xlabel('Vitesse (m/s)', fontsize = 14)
+        ax2.set_ylabel('Nombre de particules', fontsize = 12)
+
+        p.append(data.pression*10**20)
+        print(p)
+        print(time)
+        #ax3.plot(time,p)
+        p_line[0].set_data(time, p)
+        #ax3.set_xlim([0,max(time)])
+        #ax3.set_ylim([0,max(p)])
 
         return points
 
