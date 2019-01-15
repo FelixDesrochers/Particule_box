@@ -32,7 +32,7 @@ for n = nvec;
     
     % Histogramme
     figure;
-    hist(Rvec,(max(Rvec)-min(Rvec))*2+1)
+    hist(Rvec,(max(Rvec)-min(Rvec))/2+1)
     xlabel('R')
     ylabel('Occurence')
     title(strcat('n = ',num2str(n)))
