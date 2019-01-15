@@ -57,24 +57,24 @@ class Box:
         for part in self.liste_particule:
             if (part.r[0] + self.rayon) > self.x_lim :
                 part.v[0] = -abs(part.v[0])
-                self.pression += 2*self.masse*abs(part.v[0])/(self.dt*self.y_lim*self.z_lim)
+                self.pression += 2*self.masse*abs(part.v[0])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
             elif (part.r[0] - self.rayon) < 0:
                 part.v[0] = abs(part.v[0])
-                self.pression += 2*self.masse*abs(part.v[0])/(self.dt*self.y_lim*self.z_lim)
+                self.pression += 2*self.masse*abs(part.v[0])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
 
             if (part.r[1] + self.rayon) > self.y_lim:
                 part.v[1] = -abs(part.v[1])
-                self.pression += 2*self.masse*abs(part.v[1])/(self.dt*self.x_lim*self.z_lim)
+                self.pression += 2*self.masse*abs(part.v[1])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
             elif (part.r[1] - self.rayon) < 0:
                 part.v[1] = abs(part.v[1])
-                self.pression += 2*self.masse*abs(part.v[1])/(self.dt*self.x_lim*self.z_lim)
+                self.pression += 2*self.masse*abs(part.v[1])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
                 
             if (part.r[2] + self.rayon) > self.z_lim:
                 part.v[2] = -abs(part.v[2])
-                self.pression += 2*self.masse*abs(part.v[2])/(self.dt*self.x_lim*self.y_lim)
+                self.pression += 2*self.masse*abs(part.v[2])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
             elif (part.r[2] - self.rayon) < 0:
                 part.v[2] = abs(part.v[2])
-                self.pression += 2*self.masse*abs(part.v[2])/(self.dt*self.x_lim*self.y_lim)
+                self.pression += 2*self.masse*abs(part.v[2])/(self.dt*(2*self.x_lim*self.y_lim + 2*self.x_lim*self.z_lim + 2*self.y_lim*self.z_lim))
 
         #Vérifier pour collision entre les particules
         for i,part1 in enumerate(self.liste_particule):
@@ -134,8 +134,8 @@ def main():
     ax2.hist([], bins=round(N/3), facecolor='blue', alpha=1, edgecolor='black', linewidth=1.2)
 
     ax3.set_xlabel('Temps (ns)', fontsize = 14)
-    ax3.set_ylabel('Pression (MPa)', fontsize = 14)
-    ax3.set_ylim(0,3)
+    ax3.set_ylabel('Pression (kPa)', fontsize = 14)
+    ax3.set_ylim(0,500)
     ax3.set_xlim(left=0)
     p_line = ax3.plot([], [], 'g-')
 
@@ -162,8 +162,8 @@ def main():
         ax2.set_xlabel('Vitesse (m/s)', fontsize = 14)
         ax2.set_ylabel('Nombre de particules', fontsize = 12)
 
-        p.append(data.pression/1000000)
-        ax3.set_ylim(0,3)
+        p.append(data.pression/1000)
+        ax3.set_ylim(0,500)
         ax3.set_xlim(0,t*10**9)
         p_line[0].set_data(time, p)
         return points
@@ -176,7 +176,7 @@ def main():
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
     #print(np.mean([p[i] for i in np.nonzero(p)[0]]))
-    print('La pression moyenne est de '+str(np.mean(p))+ ' MPa')
+    print('La pression moyenne est de '+str(np.mean(p))+ ' kPa')
 
 if __name__ == "__main__":
     main()
