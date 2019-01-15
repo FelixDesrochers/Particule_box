@@ -135,8 +135,9 @@ def main():
 
     ax3.set_xlabel('Temps (ns)', fontsize = 14)
     ax3.set_ylabel('Pression (kPa)', fontsize = 14)
-    ax3.set_ylim(0,500)
+    ax3.set_ylim(0,300)
     ax3.set_xlim(left=0)
+    P_texte = ax3.text(0.02, 0.90, '0:.2f'.format(''), color='k', transform=ax3.transAxes)
     p_line = ax3.plot([], [], 'g-')
 
     #Définition de la fonction d'animation du système
@@ -161,11 +162,14 @@ def main():
         ax2.hist([np.linalg.norm(i.v) for i in data.liste_particule], bins=round(N/3), facecolor='blue', alpha=1, edgecolor='black', linewidth=1.2)
         ax2.set_xlabel('Vitesse (m/s)', fontsize = 14)
         ax2.set_ylabel('Nombre de particules', fontsize = 12)
-
+        
         p.append(data.pression/1000)
-        ax3.set_ylim(0,500)
+        ax3.set_ylim([0,300])
+        ax3.set_ylim(bottom = 0)
         ax3.set_xlim(0,t*10**9)
         p_line[0].set_data(time, p)
+        P_texte.set_text('P = {0:.2f} kPa'.format(np.mean(p)))
+        
         return points
 
     #Animation
